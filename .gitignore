@@ -1,0 +1,37 @@
+# Gitignore for Off-Grid Comms Project
+
+# Operating System
+.DS_Store
+.localized
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.env
+v_env/
+.venv/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Editor-specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and Databases
+*.log
+*.sqlite3
+
+# Build artifacts
+build/
+dist/
+
+# Generated documentation
+docs/public/
