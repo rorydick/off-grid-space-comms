@@ -1,19 +1,9 @@
-# Off-Grid Communications for Space Settlements and Disaster Contingency
+## Mesh Networking Principles
 
-This project explores and develops robust off-grid communication solutions, with a particular focus on their application in challenging environments such as:
+Mesh networking is a communication architecture where devices (nodes) connect directly to each other and cooperatively route data. Instead of relying on a central hub or infrastructure, each node acts as a router, forwarding data to its neighbors. This decentralized approach offers several advantages:
 
-*   **Space Settlements:** Ensuring reliable communication independent of traditional infrastructure for lunar, Martian, or orbital habitats.
-*   **Earth-Based Disaster Contingency:** Providing resilient communication networks during natural disasters, infrastructure failures, or other emergencies where standard communication is compromised.
+- **Resilience:** If one node fails, the network can continue to operate by routing data through other paths.
+- **Scalability:** Adding more nodes increases the network's coverage and capacity.
+- **Flexibility:** Mesh networks can be deployed in diverse environments without the need for pre-existing infrastructure.
 
-## Focus Areas:
-
-*   **Meshtastic:** Investigation into the capabilities and limitations of Meshtastic for long-range, low-power mesh networking.
-*   **Decentralized Networks:** Research into other decentralized communication protocols and hardware.
-*   **Power Efficiency:** Solutions optimized for minimal power consumption.
-*   **Antenna Design:** Exploration of antenna types suitable for various operational environments.
-*   **Payload Integration:** How these systems can be integrated into small satellites or other mobile platforms.
-*   **Deployment Strategies:** Practical considerations for deploying and maintaining off-grid networks.
-
-## Getting Started:
-
-Contributions are welcome! Check the `TODO.md` file for current tasks and areas where you can contribute.
+Meshtastic is an example of a mesh network technology that utilizes LoRa (Long Range) radio to enable communication over potentially long distances, while other technologies could be used to accomplish the same goal.
