@@ -6,7 +6,7 @@ Mesh networking is a communication architecture where devices (nodes) connect di
 - **Scalability:** Adding more nodes increases the network's coverage and capacity.
 - **Flexibility:** Mesh networks can be deployed in diverse environments without the need for pre-existing infrastructure.
 
-Meshtastic is an example of a mesh network technology that utilizes LoRa (Long Range) radio to enable communication over potentially long distances, while other technologies could be used to accomplish the same goal.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed technical comparison of protocols and power profiles.
 
 ## Comparative Technology Overview
 
