@@ -16,8 +16,9 @@ exploration tool for early architecture discussions.
 Model
 -----
 - Nodes live in 2D (meters)
-- Link budget is estimated with free-space path loss (FSPL) + optional
-  obstacle losses (rectangles that add dB if the line-of-sight intersects).
+- Link budget is estimated with a log-distance path loss model (FSPL-anchored) + optional
+  obstacle losses (rectangles that add dB if the line-of-sight intersects), plus optional
+  per-link Gaussian shadowing.
 - A directed edge A->B exists if: tx_power_dbm - path_loss_db >= sensitivity_dbm
 
 Usage
@@ -77,6 +78,30 @@ def fspl_db(distance_m: float, freq_mhz: float) -> float:
     return 32.44 + 20.0 * math.log10(d_km) + 20.0 * math.log10(freq_mhz)
 
 
+def log_distance_path_loss_db(
+    distance_m: float,
+    *,
+    freq_mhz: float,
+    path_loss_exp: float,
+    ref_distance_m: float = 1.0,
+) -> float:
+    """Log-distance path loss model anchored to FSPL at a reference distance.
+
+    This generalizes FSPL (n=2) to rough "clutter" environments where loss grows
+    faster with distance.
+
+    PL(d) = PL(d0) + 10 n log10(d/d0)
+
+    Notes:
+    - For path_loss_exp=2.0 and ref_distance_m=1.0, this closely matches FSPL.
+    - This is still a crude model; use for qualitative sensitivity analysis.
+    """
+
+    d = max(distance_m, ref_distance_m)
+    pl_ref = fspl_db(ref_distance_m, freq_mhz)
+    return pl_ref + 10.0 * path_loss_exp * math.log10(d / ref_distance_m)
+
+
 def segment_intersects_rect(a: Tuple[float, float], b: Tuple[float, float], r: RectObstacle) -> bool:
     """Liang–Barsky line clipping to test intersection with axis-aligned rectangle."""
 
@@ -123,11 +148,23 @@ def build_graph(
     tx_power_dbm: float,
     sensitivity_dbm: float,
     obstacles: Sequence[RectObstacle],
+    path_loss_exp: float = 2.0,
+    shadowing_sigma_db: float = 0.0,
+    rng: Optional[random.Random] = None,
 ) -> List[List[int]]:
-    """Return adjacency list for directed reachability."""
+    """Return adjacency list for directed reachability.
+
+    Args:
+        path_loss_exp: Log-distance path loss exponent (n). n=2 approximates FSPL.
+        shadowing_sigma_db: If >0, adds N(0, sigma) dB shadowing per link.
+        rng: Optional RNG for deterministic shadowing.
+    """
 
     n = len(positions)
     adj: List[List[int]] = [[] for _ in range(n)]
+    if rng is None:
+        rng = random
+
     for i in range(n):
         xi, yi = positions[i]
         for j in range(n):
@@ -135,7 +172,16 @@ def build_graph(
                 continue
             xj, yj = positions[j]
             d = math.hypot(xj - xi, yj - yi)
-            path_loss = fspl_db(d, freq_mhz) + obstacle_loss_db((xi, yi), (xj, yj), obstacles)
+
+            path_loss = log_distance_path_loss_db(
+                d,
+                freq_mhz=freq_mhz,
+                path_loss_exp=path_loss_exp,
+            )
+            path_loss += obstacle_loss_db((xi, yi), (xj, yj), obstacles)
+            if shadowing_sigma_db > 0.0:
+                path_loss += rng.gauss(0.0, shadowing_sigma_db)
+
             rx_dbm = tx_power_dbm - path_loss
             if rx_dbm >= sensitivity_dbm:
                 adj[i].append(j)
@@ -238,6 +284,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--tx-power-dbm", type=float, default=14.0, help="TX power (dBm)")
     ap.add_argument("--sensitivity-dbm", type=float, default=-130.0, help="RX sensitivity (dBm)")
     ap.add_argument(
+        "--path-loss-exp",
+        type=float,
+        default=2.0,
+        help="log-distance path loss exponent n (2=free-space-like, 2.7-4=clutter)",
+    )
+    ap.add_argument(
+        "--shadowing-sigma-db",
+        type=float,
+        default=0.0,
+        help="optional per-link Gaussian shadowing sigma (dB); 0 disables",
+    )
+    ap.add_argument(
         "--scenario",
         type=str,
         default=None,
@@ -257,8 +315,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         height = float(scen.get("height_m", height))
         obstacles = parse_obstacles(scen.get("obstacles"))
 
-    random.seed(args.seed)
-    positions = [(random.random() * width, random.random() * height) for _ in range(args.nodes)]
+    rng = random.Random(args.seed)
+    positions = [(rng.random() * width, rng.random() * height) for _ in range(args.nodes)]
 
     adj = build_graph(
         positions,
@@ -266,6 +324,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         tx_power_dbm=args.tx_power_dbm,
         sensitivity_dbm=args.sensitivity_dbm,
         obstacles=obstacles,
+        path_loss_exp=args.path_loss_exp,
+        shadowing_sigma_db=args.shadowing_sigma_db,
+        rng=rng,
     )
     metrics = connectivity_metrics(adj)
 
@@ -278,6 +339,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "freq_mhz": args.freq_mhz,
             "tx_power_dbm": args.tx_power_dbm,
             "sensitivity_dbm": args.sensitivity_dbm,
+            "path_loss_exp": args.path_loss_exp,
+            "shadowing_sigma_db": args.shadowing_sigma_db,
             "obstacles": [ob.__dict__ for ob in obstacles],
         },
         "metrics": metrics,
@@ -291,7 +354,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print("----------------")
     p = out["params"]
     print(f"nodes: {p['nodes']}  area: {p['width_m']}m x {p['height_m']}m  freq: {p['freq_mhz']} MHz")
-    print(f"tx_power: {p['tx_power_dbm']} dBm  sensitivity: {p['sensitivity_dbm']} dBm  seed: {p['seed']}")
+    print(
+        f"tx_power: {p['tx_power_dbm']} dBm  sensitivity: {p['sensitivity_dbm']} dBm  "
+        f"n: {p['path_loss_exp']}  shadow_sigma: {p['shadowing_sigma_db']} dB  seed: {p['seed']}"
+    )
     if obstacles:
         print(f"obstacles: {len(obstacles)} (rectangles w/ attenuation)")
     m = out["metrics"]
