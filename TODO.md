@@ -4,10 +4,11 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 
 ## Immediate Tasks:
 
-- [ ] Research existing off-grid communication technologies beyond Meshtastic (e.g., LoRa, amateur radio, satellite phones).
-- [ ] Draft an initial section on the principles of mesh networking for the `README.md`.
-- [ ] Outline potential use cases for off-grid comms in lunar/Martian habitats.
+- [x] Research existing off-grid communication technologies beyond Meshtastic (e.g., LoRa, amateur radio, satellite phones).
+- [x] Draft an initial section on the principles of mesh networking for the `README.md`.
+- [x] Outline potential use cases for off-grid comms in lunar/Martian habitats.
 - [ ] Investigate power consumption profiles of common Meshtastic devices.
+- [ ] Draft a "Technical Architecture" section comparing DTN (Delay Tolerant Networking) with mesh protocols.
 
 ## Future Tasks:
 

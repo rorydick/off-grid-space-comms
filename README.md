@@ -7,3 +7,19 @@ Mesh networking is a communication architecture where devices (nodes) connect di
 - **Flexibility:** Mesh networks can be deployed in diverse environments without the need for pre-existing infrastructure.
 
 Meshtastic is an example of a mesh network technology that utilizes LoRa (Long Range) radio to enable communication over potentially long distances, while other technologies could be used to accomplish the same goal.
+
+## Comparative Technology Overview
+
+| Technology | PHY / Protocol | Use Case | Strengths |
+| :--- | :--- | :--- | :--- |
+| **Meshtastic** | LoRa / Custom Mesh | Off-grid messaging, outdoors | User-friendly, massive community, broad hardware support. |
+| **Reticulum** | Agnostic (LoRa, WiFi, HF) | Unstoppable, private networks | Crypto-native, extremely resilient, medium-agnostic. |
+| **MeshCore** | LoRa / Hybrid Routing | Custom embedded solutions | Lightweight, balanced between Meshtastic and Reticulum. |
+| **LunaNet** | DTN / BP / 802.11 | Lunar/Martian surface infrastructure | Interoperable standards, space-grade, supports high latency. |
+
+## Use Cases for Lunar/Martian Habitats
+
+1. **EVA Emergency Backup:** Primary comms (LTE/WiFi) rely on base stations. A LoRa-based mesh provides a low-power "pager" system for life-critical alerts if primary infrastructure fails.
+2. **Distributed Sensor Arrays:** Deploying hundreds of environmental sensors across varied terrain without cabling or power-hungry high-bandwidth radios.
+3. **Local Navigation Beacons:** Mesh nodes can serve as static anchors for relative positioning where GPS is unavailable.
+4. **Disaster Recovery:** In the event of habitat depressurization or module loss, autonomous mesh nodes can facilitate coordination between isolated groups.
