@@ -12,7 +12,7 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 
 ## Future Tasks:
 
-- [ ] Develop a simple simulation model for mesh network propagation in varied terrain.
+- [x] Develop a simple simulation model for mesh network propagation in varied terrain. (See `sim/mesh_sim.py`.)
 - [ ] Design a preliminary concept for a space-hardened Meshtastic node.
 - [ ] Explore methods for integrating off-grid comms with emergency services on Earth.
 - [ ] Begin drafting a section on regulatory considerations for space-based off-grid comms.
