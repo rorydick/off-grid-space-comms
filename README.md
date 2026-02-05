@@ -8,6 +8,8 @@ Mesh networking is a communication architecture where devices (nodes) connect di
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed technical comparison of protocols and power profiles.
 
+A preliminary concept note for ruggedizing a Meshtastic-class node is in [SPACE_HARDENED_NODE.md](SPACE_HARDENED_NODE.md).
+
 ## Simulation Prototype
 
 A lightweight, dependency-free simulator is available in [`sim/`](sim/) to explore how node density and simple terrain attenuation impact mesh connectivity.
