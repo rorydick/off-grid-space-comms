@@ -1,0 +1,14 @@
+{
+  "width_m": 15000,
+  "height_m": 15000,
+  "obstacles": [
+    {
+      "x1": 5000,
+      "y1": 0,
+      "x2": 10000,
+      "y2": 15000,
+      "loss_db": 40,
+      "note": "A massive terrain obstacle (e.g. Mons peak or crater wall)"
+    }
+  ]
+}

@@ -16,3 +16,5 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Design a preliminary concept for a space-hardened Meshtastic node. (See `SPACE_HARDENED_NODE.md`.)
 - [x] Explore methods for integrating off-grid comms with emergency services on Earth. (See `EMERGENCY_INTEGRATION.md`.)
 - [x] Begin drafting a section on regulatory considerations for space-based off-grid comms. (See `REGULATORY.md`.)
+- [ ] Implement multi-hop 'relay' metrics in the simulator to better model path congestion.
+- [ ] Research and add technical specs for 'Interplanetary Overlay' protocol.
