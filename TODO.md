@@ -14,5 +14,5 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 
 - [x] Develop a simple simulation model for mesh network propagation in varied terrain. (See `sim/mesh_sim.py`.)
 - [x] Design a preliminary concept for a space-hardened Meshtastic node. (See `SPACE_HARDENED_NODE.md`.)
-- [ ] Explore methods for integrating off-grid comms with emergency services on Earth.
-- [ ] Begin drafting a section on regulatory considerations for space-based off-grid comms.
+- [x] Explore methods for integrating off-grid comms with emergency services on Earth. (See `EMERGENCY_INTEGRATION.md`.)
+- [x] Begin drafting a section on regulatory considerations for space-based off-grid comms. (See `REGULATORY.md`.)

@@ -37,3 +37,22 @@ For space missions, energy is the most constrained resource. Modern off-grid dev
 *Data based on standard Meshtastic firmware configurations.*
 
 **Recommendation for Lunar/Martian Deployments:** nRF52-based architectures are mandatory for autonomous nodes (beacons/sensors) to minimize solar array size and battery mass. ESP32 is suitable only for base-powered hub stations.
+
+## Gateway Nodes (Bridging to Infrastructure)
+
+In both Earth disaster response and space settlement operations, a *gateway* node often provides the most leverage:
+
+- **Mesh-only nodes** optimize for power and simplicity.
+- **Gateway nodes** concentrate complexity: storage, routing policy, optional internet/satellite backhaul, and security controls.
+
+Typical gateway responsibilities:
+
+- **Protocol translation** (e.g., mesh packet ↔ DTN bundle, mesh ↔ IP)
+- **Store-and-forward buffering** during outages
+- **Priority handling** (life-safety alerts preempt best-effort traffic)
+- **Security boundary** (rate limiting, allowlists, signed message verification)
+
+See also:
+
+- Earth integration patterns: [`EMERGENCY_INTEGRATION.md`](EMERGENCY_INTEGRATION.md)
+- Regulatory constraints for backhaul modes: [`REGULATORY.md`](REGULATORY.md)
