@@ -1,6 +1,6 @@
 ## Mesh Networking Principles
 
-Mesh networking is a communication architecture where devices (nodes) connect directly to each other and cooperatively route data. Instead of relying on a central hub or infrastructure, each node acts as a router, forwarding data to its neighbors. This decentralized approach offers several advantages:
+Mesh networking is a communication architecture where devices (nodes) connect directly to each other and cooperatively route data. Instead of relying on a central hub or infrastructure, each node acts as a router, forwarding data to its neighbours. This decentralised approach offers several advantages:
 
 - **Resilience:** If one node fails, the network can continue to operate by routing data through other paths.
 - **Scalability:** Adding more nodes increases the network's coverage and capacity.
@@ -8,7 +8,7 @@ Mesh networking is a communication architecture where devices (nodes) connect di
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed technical comparison of protocols and power profiles.
 
-A preliminary concept note for ruggedizing a Meshtastic-class node is in [SPACE_HARDENED_NODE.md](SPACE_HARDENED_NODE.md).
+A preliminary concept note for ruggedising a Meshtastic-class node is in [SPACE_HARDENED_NODE.md](SPACE_HARDENED_NODE.md).
 
 Draft notes on real-world deployment constraints:
 

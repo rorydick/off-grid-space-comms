@@ -43,7 +43,7 @@ A realistic integration target is not “full voice replacement,” but:
 
 ## 3) Information formats
 
-To integrate well, messages should be structured enough to route and prioritize.
+To integrate well, messages should be structured enough to route and prioritise.
 
 Suggested minimal schema (human + machine readable):
 
@@ -63,14 +63,14 @@ Key challenge: in disasters, systems are vulnerable to spam/hoaxes.
 Design options:
 
 - **Signed messages** (public keys distributed ahead of time)
-- **Role-based credentials** for authorized alert injection (e.g., local authority)
+- **Role-based credentials** for authorised alert injection (e.g., local authority)
 - **Rate limiting** + local moderation controls
 - **“Quorum” confirmation** for high-impact broadcasts
 
 ## 5) Operational concepts (what responders actually do)
 
 - **Pre-incident provisioning:** distribute nodes to wardens/volunteers; run periodic drills.
-- **Activation:** incident commander authorizes broadcast keys; gateway nodes deployed.
+- **Activation:** incident commander authorises broadcast keys; gateway nodes deployed.
 - **Triage:** incident reports are aggregated at gateways; summary forwarded to command.
 - **Recovery:** after infrastructure returns, sync logs and verify message delivery.
 

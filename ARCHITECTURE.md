@@ -42,7 +42,7 @@ For space missions, energy is the most constrained resource. Modern off-grid dev
 
 In both Earth disaster response and space settlement operations, a *gateway* node often provides the most leverage:
 
-- **Mesh-only nodes** optimize for power and simplicity.
+- **Mesh-only nodes** optimise for power and simplicity.
 - **Gateway nodes** concentrate complexity: storage, routing policy, optional internet/satellite backhaul, and security controls.
 
 Typical gateway responsibilities:

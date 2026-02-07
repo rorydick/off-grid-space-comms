@@ -56,7 +56,7 @@ class RectObstacle:
     y2: float
     loss_db: float
 
-    def normalize(self) -> "RectObstacle":
+    def normalise(self) -> "RectObstacle":
         return RectObstacle(
             x1=min(self.x1, self.x2),
             y1=min(self.y1, self.y2),
@@ -87,7 +87,7 @@ def log_distance_path_loss_db(
 ) -> float:
     """Log-distance path loss model anchored to FSPL at a reference distance.
 
-    This generalizes FSPL (n=2) to rough "clutter" environments where loss grows
+    This generalises FSPL (n=2) to rough "clutter" environments where loss grows
     faster with distance.
 
     PL(d) = PL(d0) + 10 n log10(d/d0)
@@ -269,7 +269,7 @@ def parse_obstacles(raw: object) -> List[RectObstacle]:
             x2=float(item["x2"]),
             y2=float(item["y2"]),
             loss_db=float(item.get("loss_db", item.get("lossDb", 0.0))),
-        ).normalize()
+        ).normalise()
         obs.append(ob)
     return obs
 

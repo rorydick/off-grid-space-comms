@@ -7,7 +7,7 @@ This project looks at *off-grid* communications for two very different contexts:
 
 Regulatory constraints differ materially across these environments. This note is a starting point and is **not legal advice**.
 
-## 1) Spectrum authorization: who grants permission?
+## 1) Spectrum authorisation: who grants permission?
 
 ### Earth (national regulators)
 
@@ -15,8 +15,8 @@ On Earth, transmit authority is granted by **national** regulators (e.g., FCC in
 
 Common paths:
 
-- **License-exempt ISM bands** (region-specific): e.g., 433 MHz, 868 MHz (EU), 902–928 MHz (US), 2.4 GHz.
-  - Pros: fast deployment, no per-user license.
+- **Licence-exempt ISM bands** (region-specific): e.g., 433 MHz, 868 MHz (EU), 902–928 MHz (US), 2.4 GHz.
+  - Pros: fast deployment, no per-user licence.
   - Cons: duty-cycle/EIRP limits; interference; regional fragmentation.
 - **Amateur radio** (where allowed): attractive for experimentation but typically has **strict constraints** (see below).
 - **Licensed land mobile / public safety** allocations: powerful for integration with emergency services, but access is constrained.
@@ -27,7 +27,7 @@ Space radiocommunication is coordinated internationally under the **ITU Radio Re
 
 Key ideas:
 
-- **You generally still need a license** (via a national administration) for space-to-Earth links.
+- **You generally still need a licence** (via a national administration) for space-to-Earth links.
 - Space services (e.g., Space Operation Service, Space Research Service, Earth Exploration-Satellite Service) determine which allocations and rules apply.
 - Even for lunar surface systems, any RF that can reach Earth or uses space services will typically involve ITU coordination.
 
@@ -43,7 +43,7 @@ Amateur radio can be a useful framework for prototyping and community deployment
 
 Design implication: if using ham bands for prototypes, plan a **separate, compliant “open” mode** and a pathway to **licensed non-ham** operations for production.
 
-## 3) Equipment authorization and compliance
+## 3) Equipment authorisation and compliance
 
 For Earth deployments, it is not enough to have spectrum rights: the *equipment* often needs approval.
 
@@ -80,7 +80,7 @@ For lunar/Martian habitats, there may be additional mission rules and governance
 
 1. Add a short **country/region matrix** for ISM band constraints (EU868 vs US915 vs others).
 2. Identify **two regulatory-ready operational modes**:
-   - (A) local, license-exempt mesh for settlement/disaster areas
+   - (A) local, licence-exempt mesh for settlement/disaster areas
    - (B) a licensed backhaul mode (satellite/DTN gateway)
 3. For Earth emergency integration, map candidate standards and agencies (see `EMERGENCY_INTEGRATION.md`).
 
@@ -88,4 +88,4 @@ For lunar/Martian habitats, there may be additional mission rules and governance
 
 - ITU Radio Regulations / space service allocations (primary source)
 - National regulator documentation (FCC/Ofcom/etc.)
-- CE/RED and FCC equipment authorization guides
+- CE/RED and FCC equipment authorisation guides
