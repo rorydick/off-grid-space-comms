@@ -17,5 +17,5 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Explore methods for integrating off-grid comms with emergency services on Earth. (See `EMERGENCY_INTEGRATION.md`.)
 - [x] Begin drafting a section on regulatory considerations for space-based off-grid comms. (See `REGULATORY.md`.)
 - [x] Implement multi-hop 'relay' metrics in the simulator to better model path congestion.
-- [ ] Implement a simple 'power-budget' mode in the simulator to track total energy cost of a message broadcast.
+- [x] Implement a simple 'power-budget' mode in the simulator to track total energy cost of a message broadcast.
 - [ ] Research and add technical specs for 'Interplanetary Overlay' protocol.

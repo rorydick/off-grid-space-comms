@@ -41,7 +41,7 @@ import argparse
 import json
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -141,8 +141,20 @@ def obstacle_loss_db(a: Tuple[float, float], b: Tuple[float, float], obstacles: 
     return loss
 
 
+@dataclass
+class Node:
+    """Represents a mesh node with position and power state."""
+    id: int
+    x: float
+    y: float
+    energy_consumed_joules: float = 0.0
+
+    def consume(self, joules: float):
+        self.energy_consumed_joules += joules
+
+
 def build_graph(
-    positions: Sequence[Tuple[float, float]],
+    nodes: Sequence[Node],
     *,
     freq_mhz: float,
     tx_power_dbm: float,
@@ -152,33 +164,27 @@ def build_graph(
     shadowing_sigma_db: float = 0.0,
     rng: Optional[random.Random] = None,
 ) -> List[List[int]]:
-    """Return adjacency list for directed reachability.
+    """Return adjacency list for directed reachability."""
 
-    Args:
-        path_loss_exp: Log-distance path loss exponent (n). n=2 approximates FSPL.
-        shadowing_sigma_db: If >0, adds N(0, sigma) dB shadowing per link.
-        rng: Optional RNG for deterministic shadowing.
-    """
-
-    n = len(positions)
+    n = len(nodes)
     adj: List[List[int]] = [[] for _ in range(n)]
     if rng is None:
         rng = random
 
     for i in range(n):
-        xi, yi = positions[i]
+        ni = nodes[i]
         for j in range(n):
             if i == j:
                 continue
-            xj, yj = positions[j]
-            d = math.hypot(xj - xi, yj - yi)
+            nj = nodes[j]
+            d = math.hypot(nj.x - ni.x, nj.y - ni.y)
 
             path_loss = log_distance_path_loss_db(
                 d,
                 freq_mhz=freq_mhz,
                 path_loss_exp=path_loss_exp,
             )
-            path_loss += obstacle_loss_db((xi, yi), (xj, yj), obstacles)
+            path_loss += obstacle_loss_db((ni.x, ni.y), (nj.x, nj.y), obstacles)
             if shadowing_sigma_db > 0.0:
                 path_loss += rng.gauss(0.0, shadowing_sigma_db)
 
@@ -188,25 +194,41 @@ def build_graph(
     return adj
 
 
-def bfs_hops(adj: Sequence[Sequence[int]], start: int) -> List[Optional[int]]:
-    n = len(adj)
+def run_broadcast_sim(
+    nodes: List[Node],
+    adj: List[List[int]],
+    start_node_id: int,
+    tx_energy_j: float,
+    rx_energy_j: float,
+) -> List[Optional[int]]:
+    """Simulate a single broadcast flooding the network and track energy."""
+    n = len(nodes)
     dist: List[Optional[int]] = [None] * n
-    dist[start] = 0
-    q = [start]
+    dist[start_node_id] = 0
+    
+    # Start node TX energy
+    nodes[start_node_id].consume(tx_energy_j)
+    
+    q = [start_node_id]
     qi = 0
     while qi < len(q):
-        u = q[qi]
+        u_idx = q[qi]
         qi += 1
-        du = dist[u]
-        assert du is not None
-        for v in adj[u]:
-            if dist[v] is None:
-                dist[v] = du + 1
-                q.append(v)
+        du = dist[u_idx]
+        
+        for v_idx in adj[u_idx]:
+            # Every node in range consumes RX energy to listen/process
+            nodes[v_idx].consume(rx_energy_j)
+            
+            if dist[v_idx] is None:
+                dist[v_idx] = du + 1
+                # If it's a new hop, this node re-broadcasts
+                nodes[v_idx].consume(tx_energy_j)
+                q.append(v_idx)
     return dist
 
 
-def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
+def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: float, rx_j: float) -> Dict[str, float]:
     n = len(adj)
     if n == 0:
         return {
@@ -216,6 +238,8 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
             "largest_out_component": 0.0,
             "avg_link_density": 0.0,
             "max_hops": 0.0,
+            "total_energy_j": 0.0,
+            "avg_energy_per_broadcast_j": 0.0,
         }
 
     reachable_pairs = 0
@@ -223,10 +247,14 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
     max_reached_from_any = 0
     max_hops_overall = 0
     total_edges = 0
+    
+    # Reset energy for metric calculation (we'll run N broadcasts)
+    for node in nodes:
+        node.energy_consumed_joules = 0.0
 
     for i in range(n):
         total_edges += len(adj[i])
-        dist = bfs_hops(adj, i)
+        dist = run_broadcast_sim(nodes, list(adj), i, tx_j, rx_j)
         reached = 0
         for j in range(n):
             if i == j:
@@ -244,8 +272,11 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
     total_pairs = n * (n - 1)
     frac = reachable_pairs / total_pairs if total_pairs else 0.0
     avg_hops = reachable_hops_sum / reachable_pairs if reachable_pairs else 0.0
-    largest_out_component = (max_reached_from_any + 1) / n  # +1 includes the source node
+    largest_out_component = (max_reached_from_any + 1) / n
     avg_link_density = total_edges / n if n > 0 else 0.0
+    
+    total_energy = sum(node.energy_consumed_joules for node in nodes)
+    avg_energy_per_broadcast = total_energy / n if n > 0 else 0.0
 
     return {
         "nodes": float(n),
@@ -254,6 +285,8 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
         "largest_out_component_fraction": largest_out_component,
         "avg_link_density": avg_link_density,
         "max_hops": float(max_hops_overall),
+        "total_energy_j": total_energy,
+        "avg_energy_per_broadcast_j": avg_energy_per_broadcast,
     }
 
 
@@ -305,6 +338,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=0.0,
         help="optional per-link Gaussian shadowing sigma (dB); 0 disables",
     )
+    ap.add_argument("--tx-energy-j", type=float, default=0.1, help="Energy consumed per transmission (Joules)")
+    ap.add_argument("--rx-energy-j", type=float, default=0.01, help="Energy consumed per reception/listen (Joules)")
     ap.add_argument(
         "--scenario",
         type=str,
@@ -326,10 +361,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         obstacles = parse_obstacles(scen.get("obstacles"))
 
     rng = random.Random(args.seed)
-    positions = [(rng.random() * width, rng.random() * height) for _ in range(args.nodes)]
+    nodes = [Node(id=i, x=rng.random() * width, y=rng.random() * height) for i in range(args.nodes)]
 
     adj = build_graph(
-        positions,
+        nodes,
         freq_mhz=args.freq_mhz,
         tx_power_dbm=args.tx_power_dbm,
         sensitivity_dbm=args.sensitivity_dbm,
@@ -338,7 +373,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         shadowing_sigma_db=args.shadowing_sigma_db,
         rng=rng,
     )
-    metrics = connectivity_metrics(adj)
+    metrics = connectivity_metrics(nodes, adj, args.tx_energy_j, args.rx_energy_j)
 
     out = {
         "params": {
@@ -351,6 +386,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "sensitivity_dbm": args.sensitivity_dbm,
             "path_loss_exp": args.path_loss_exp,
             "shadowing_sigma_db": args.shadowing_sigma_db,
+            "tx_energy_j": args.tx_energy_j,
+            "rx_energy_j": args.rx_energy_j,
             "obstacles": [ob.__dict__ for ob in obstacles],
         },
         "metrics": metrics,
@@ -376,6 +413,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"max hops observed: {m['max_hops']:.0f}")
     print(f"avg link density (edges/node): {m['avg_link_density']:.2f}")
     print(f"largest out-component fraction: {m['largest_out_component_fraction']:.3f}")
+    print(f"avg energy per broadcast: {m['avg_energy_per_broadcast_j']:.3f} J")
     return 0
 
 
