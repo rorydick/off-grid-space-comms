@@ -214,13 +214,18 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
             "reachable_pair_fraction": 0.0,
             "avg_hops_reachable": 0.0,
             "largest_out_component": 0.0,
+            "avg_link_density": 0.0,
+            "max_hops": 0.0,
         }
 
     reachable_pairs = 0
     reachable_hops_sum = 0
     max_reached_from_any = 0
+    max_hops_overall = 0
+    total_edges = 0
 
     for i in range(n):
+        total_edges += len(adj[i])
         dist = bfs_hops(adj, i)
         reached = 0
         for j in range(n):
@@ -231,6 +236,8 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
                 reached += 1
                 reachable_pairs += 1
                 reachable_hops_sum += d
+                if d > max_hops_overall:
+                    max_hops_overall = d
         if reached > max_reached_from_any:
             max_reached_from_any = reached
 
@@ -238,12 +245,15 @@ def connectivity_metrics(adj: Sequence[Sequence[int]]) -> Dict[str, float]:
     frac = reachable_pairs / total_pairs if total_pairs else 0.0
     avg_hops = reachable_hops_sum / reachable_pairs if reachable_pairs else 0.0
     largest_out_component = (max_reached_from_any + 1) / n  # +1 includes the source node
+    avg_link_density = total_edges / n if n > 0 else 0.0
 
     return {
         "nodes": float(n),
         "reachable_pair_fraction": frac,
         "avg_hops_reachable": avg_hops,
         "largest_out_component_fraction": largest_out_component,
+        "avg_link_density": avg_link_density,
+        "max_hops": float(max_hops_overall),
     }
 
 
@@ -363,6 +373,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     m = out["metrics"]
     print(f"reachable pair fraction: {m['reachable_pair_fraction']:.3f}")
     print(f"avg hops (reachable pairs): {m['avg_hops_reachable']:.2f}")
+    print(f"max hops observed: {m['max_hops']:.0f}")
+    print(f"avg link density (edges/node): {m['avg_link_density']:.2f}")
     print(f"largest out-component fraction: {m['largest_out_component_fraction']:.3f}")
     return 0
 
