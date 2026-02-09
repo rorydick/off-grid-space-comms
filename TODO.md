@@ -19,4 +19,5 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Implement multi-hop 'relay' metrics in the simulator to better model path congestion.
 - [x] Implement a simple 'power-budget' mode in the simulator to track total energy cost of a message broadcast.
 - [ ] Research and add technical specs for 'Interplanetary Overlay' protocol.
-- [ ] Implement simple visualization (ASCII or PNG) for the mesh network topology.
+- [x] Implement simple visualization (ASCII or PNG) for the mesh network topology.
+- [ ] Implement path-loss visualization (heatmap) to identify dead zones in a scenario.

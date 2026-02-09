@@ -261,9 +261,13 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
         node.energy_consumed_joules = 0.0
         node.messages_handled = 0
 
+    # For visualization/topology check
+    all_dists: List[List[Optional[int]]] = []
+
     for i in range(n):
         total_edges += len(adj[i])
         dist = run_broadcast_sim(nodes, list(adj), i, tx_j, rx_j)
+        all_dists.append(dist)
         reached = 0
         for j in range(n):
             if i == j:
@@ -298,7 +302,41 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
         "total_energy_j": total_energy,
         "avg_energy_per_broadcast_j": avg_energy_per_broadcast,
         "max_messages_per_node": float(max_msgs),
-    }
+    }, all_dists
+
+
+def render_ascii_map(
+    nodes: List[Node], 
+    width: float, 
+    height: float, 
+    cols: int = 60, 
+    rows: int = 20,
+    obstacles: Sequence[RectObstacle] = ()
+) -> str:
+    """Render a simple ASCII map of nodes and obstacles."""
+    grid = [[" " for _ in range(cols)] for _ in range(rows)]
+    
+    # Draw obstacles
+    for ob in obstacles:
+        c1 = min(cols - 1, max(0, int((ob.x1 / width) * cols)))
+        c2 = min(cols - 1, max(0, int((ob.x2 / width) * cols)))
+        r1 = min(rows - 1, max(0, int((ob.y1 / height) * rows)))
+        r2 = min(rows - 1, max(0, int((ob.y2 / height) * rows)))
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
+                grid[r][c] = "#"
+
+    # Draw nodes
+    for node in nodes:
+        c = min(cols - 1, max(0, int((node.x / width) * cols)))
+        r = min(rows - 1, max(0, int((node.y / height) * rows)))
+        grid[r][c] = "."
+        
+    lines = ["+" + "-" * cols + "+"]
+    for row in grid:
+        lines.append("|" + "".join(row) + "|")
+    lines.append("+" + "-" * cols + "+")
+    return "\n".join(lines)
 
 
 def load_scenario(path: Path) -> Dict:
@@ -358,6 +396,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="optional scenario JSON (overrides width/height/obstacles if provided)",
     )
     ap.add_argument("--json", action="store_true", help="print machine-readable JSON only")
+    ap.add_argument("--map", action="store_true", help="print ASCII map of the network")
 
     args = ap.parse_args(argv)
 
@@ -384,7 +423,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         shadowing_sigma_db=args.shadowing_sigma_db,
         rng=rng,
     )
-    metrics = connectivity_metrics(nodes, adj, args.tx_energy_j, args.rx_energy_j)
+    metrics, _ = connectivity_metrics(nodes, adj, args.tx_energy_j, args.rx_energy_j)
 
     out = {
         "params": {
@@ -407,6 +446,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.json:
         print(json.dumps(out, indent=2, sort_keys=True))
         return 0
+
+    if args.map:
+        print("\nMesh Topology Map")
+        print(render_ascii_map(nodes, width, height, obstacles=obstacles))
+        print("(. = node, # = obstacle)\n")
 
     print("Mesh sim summary")
     print("----------------")
