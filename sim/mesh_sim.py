@@ -9,6 +9,7 @@ Provide a *simple* model that helps reason about:
 - node density vs. connectivity
 - hop count / reachability
 - effect of terrain/obstacle attenuation on LoRa-class links
+- energy consumption and congestion (multi-hop)
 
 This is not a RF-accurate channel model. It is intended as a lightweight
 exploration tool for early architecture discussions.
@@ -148,9 +149,13 @@ class Node:
     x: float
     y: float
     energy_consumed_joules: float = 0.0
+    messages_handled: int = 0
 
     def consume(self, joules: float):
         self.energy_consumed_joules += joules
+
+    def handle_msg(self):
+        self.messages_handled += 1
 
 
 def build_graph(
@@ -201,13 +206,14 @@ def run_broadcast_sim(
     tx_energy_j: float,
     rx_energy_j: float,
 ) -> List[Optional[int]]:
-    """Simulate a single broadcast flooding the network and track energy."""
+    """Simulate a single broadcast flooding the network and track energy/congestion."""
     n = len(nodes)
     dist: List[Optional[int]] = [None] * n
     dist[start_node_id] = 0
     
     # Start node TX energy
     nodes[start_node_id].consume(tx_energy_j)
+    nodes[start_node_id].handle_msg()
     
     q = [start_node_id]
     qi = 0
@@ -224,6 +230,7 @@ def run_broadcast_sim(
                 dist[v_idx] = du + 1
                 # If it's a new hop, this node re-broadcasts
                 nodes[v_idx].consume(tx_energy_j)
+                nodes[v_idx].handle_msg()
                 q.append(v_idx)
     return dist
 
@@ -235,11 +242,12 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
             "nodes": 0,
             "reachable_pair_fraction": 0.0,
             "avg_hops_reachable": 0.0,
-            "largest_out_component": 0.0,
+            "largest_out_component_fraction": 0.0,
             "avg_link_density": 0.0,
             "max_hops": 0.0,
             "total_energy_j": 0.0,
             "avg_energy_per_broadcast_j": 0.0,
+            "max_messages_per_node": 0.0,
         }
 
     reachable_pairs = 0
@@ -248,9 +256,10 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
     max_hops_overall = 0
     total_edges = 0
     
-    # Reset energy for metric calculation (we'll run N broadcasts)
+    # Reset state for metric calculation (we'll run N broadcasts)
     for node in nodes:
         node.energy_consumed_joules = 0.0
+        node.messages_handled = 0
 
     for i in range(n):
         total_edges += len(adj[i])
@@ -277,6 +286,7 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
     
     total_energy = sum(node.energy_consumed_joules for node in nodes)
     avg_energy_per_broadcast = total_energy / n if n > 0 else 0.0
+    max_msgs = max(node.messages_handled for node in nodes) if nodes else 0
 
     return {
         "nodes": float(n),
@@ -287,6 +297,7 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
         "max_hops": float(max_hops_overall),
         "total_energy_j": total_energy,
         "avg_energy_per_broadcast_j": avg_energy_per_broadcast,
+        "max_messages_per_node": float(max_msgs),
     }
 
 
@@ -414,6 +425,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"avg link density (edges/node): {m['avg_link_density']:.2f}")
     print(f"largest out-component fraction: {m['largest_out_component_fraction']:.3f}")
     print(f"avg energy per broadcast: {m['avg_energy_per_broadcast_j']:.3f} J")
+    print(f"max messages per node (congestion proxy): {m['max_messages_per_node']:.0f}")
     return 0
 
 
