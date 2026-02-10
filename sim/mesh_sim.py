@@ -305,6 +305,69 @@ def connectivity_metrics(nodes: List[Node], adj: Sequence[Sequence[int]], tx_j: 
     }, all_dists
 
 
+def render_heatmap(
+    nodes: List[Node],
+    all_dists: List[List[Optional[int]]],
+    width: float,
+    height: float,
+    cols: int = 60,
+    rows: int = 20,
+) -> str:
+    """Render a reachability heatmap.
+    
+    Each cell's intensity represents the percentage of other nodes that can reach this cell's location.
+    Wait, better: average hop count to reach this cell from all other nodes.
+    Actually, for a node-based sim, let's just show reachability % per node.
+    """
+    grid = [[0.0 for _ in range(cols)] for _ in range(rows)]
+    counts = [[0 for _ in range(cols)] for _ in range(rows)]
+    
+    n = len(nodes)
+    if n == 0:
+        return "No nodes to map."
+
+    # reach_counts[j] = fraction of nodes i that can reach node j
+    reach_counts = [0] * n
+    for i in range(n):
+        for j in range(n):
+            if all_dists[i][j] is not None:
+                reach_counts[j] += 1
+    
+    # Track which cells are covered by reachability values
+    cell_values = {}
+    
+    for i, node in enumerate(nodes):
+        c = min(cols - 1, max(0, int((node.x / width) * cols)))
+        r = min(rows - 1, max(0, int((node.y / height) * rows)))
+        pos = (r, c)
+        if pos not in cell_values:
+            cell_values[pos] = []
+        cell_values[pos].append(reach_counts[i] / n)
+
+    chars = " .:-=+*#%@"
+    
+    lines = ["+" + "-" * cols + "+"]
+    for r in range(rows):
+        row_str = ""
+        for c in range(cols):
+            pos = (r, c)
+            if pos in cell_values:
+                # Average reachability of nodes in this cell
+                val = sum(cell_values[pos]) / len(cell_values[pos])
+                # Scale intensity: 0.0-1.0 to char index
+                # If reachable fraction is > 0 but small, use at least the first non-space char
+                if val == 0:
+                    idx = 0
+                else:
+                    idx = max(1, min(len(chars) - 1, int(val * (len(chars) - 1))))
+                row_str += chars[idx]
+            else:
+                row_str += " "
+        lines.append("|" + row_str + "|")
+    lines.append("+" + "-" * cols + "+")
+    return "\n".join(lines)
+
+
 def render_ascii_map(
     nodes: List[Node], 
     width: float, 
@@ -397,6 +460,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     ap.add_argument("--json", action="store_true", help="print machine-readable JSON only")
     ap.add_argument("--map", action="store_true", help="print ASCII map of the network")
+    ap.add_argument("--heatmap", action="store_true", help="print reachability heatmap")
 
     args = ap.parse_args(argv)
 
@@ -423,7 +487,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         shadowing_sigma_db=args.shadowing_sigma_db,
         rng=rng,
     )
-    metrics, _ = connectivity_metrics(nodes, adj, args.tx_energy_j, args.rx_energy_j)
+    metrics, all_dists = connectivity_metrics(nodes, adj, args.tx_energy_j, args.rx_energy_j)
 
     out = {
         "params": {
@@ -451,6 +515,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print("\nMesh Topology Map")
         print(render_ascii_map(nodes, width, height, obstacles=obstacles))
         print("(. = node, # = obstacle)\n")
+
+    if args.heatmap:
+        print("\nReachability Heatmap (Darker/Heavier = Better Connectivity)")
+        print(render_heatmap(nodes, all_dists, width, height))
+        print("(Scale: . : - = + * # % @)\n")
 
     print("Mesh sim summary")
     print("----------------")
