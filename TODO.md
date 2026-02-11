@@ -20,5 +20,6 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Implement a simple 'power-budget' mode in the simulator to track total energy cost of a message broadcast.
 - [x] Implement path-loss visualization (heatmap) to identify dead zones in a scenario.
 - [x] Research and add technical specs for 'Interplanetary Overlay' protocol. (See `ION_DTN_SPECS.md`.)
-- [ ] Implement a basic Contact Graph Routing (CGR) logic in the simulator.
+- [x] Implement a basic Contact Graph Routing (CGR) logic in the simulator. (See `sim/cgr_sim.py`.)
+- [ ] Refine CGR logic to support multi-hop pathfinding across time.
 
