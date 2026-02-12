@@ -22,6 +22,6 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Research and add technical specs for 'Interplanetary Overlay' protocol. (See `ION_DTN_SPECS.md`.)
 - [x] Implement a basic Contact Graph Routing (CGR) logic in the simulator. (See `sim/cgr_sim.py`.)
 - [x] Refine CGR logic to support multi-hop pathfinding across time.
-- [ ] Implement bundle fragmentation support in CGR router.
+- [x] Implement bundle fragmentation support in CGR router.
 - [ ] Add visualization for time-varying contacts (Gantt chart or similar).
 
