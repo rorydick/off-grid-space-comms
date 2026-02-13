@@ -1,0 +1,28 @@
+{
+  "contacts": [
+    {
+      "source": 0,
+      "dest": 1,
+      "start_t": 0,
+      "end_t": 100,
+      "datarate": 1000
+    },
+    {
+      "source": 1,
+      "dest": 2,
+      "start_t": 50,
+      "end_t": 150,
+      "datarate": 1000
+    }
+  ],
+  "bundles": [
+    {
+      "id": 1,
+      "source": 0,
+      "dest": 2,
+      "size": 5000,
+      "creation_t": 0,
+      "deadline_t": 500
+    }
+  ]
+}

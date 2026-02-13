@@ -5,9 +5,10 @@ A simple Contact Graph Routing (CGR) simulator.
 Builds on top of basic mesh connectivity concepts but introduces time-varying links.
 """
 
+import json
 import math
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional, Tuple
 
 @dataclass
@@ -39,6 +40,8 @@ class CGRRouter:
     def __init__(self, node_id: int):
         self.node_id = node_id
         self.contacts: List[Contact] = []
+        self.storage_limit = float('inf')
+        self.current_storage = 0
         
     def add_contact(self, contact: Contact):
         self.contacts.append(contact)
@@ -155,7 +158,39 @@ class CGRRouter:
 def main():
     parser = argparse.ArgumentParser(description="Contact Graph Routing (CGR) Simulator")
     parser.add_argument("--bundle-size", type=float, default=1000, help="Bundle size in bits")
+    parser.add_argument("--scenario", type=str, help="Path to contact plan JSON")
+    parser.add_argument("--storage", type=float, default=float('inf'), help="Node storage limit in bits")
     args = parser.parse_args()
+
+    router = CGRRouter(node_id=0)
+    router.storage_limit = args.storage
+
+    if args.scenario:
+        with open(args.scenario, 'r') as f:
+            data = json.load(f)
+            for c_data in data.get('contacts', []):
+                router.add_contact(Contact(**c_data))
+            
+            bundles = [Bundle(**b_data) for b_data in data.get('bundles', [])]
+            if not bundles:
+                print("No bundles found in scenario.")
+                return
+            
+            for bundle in bundles:
+                print(f"\nRouting Bundle {bundle.id}: {bundle.size} bits from {bundle.source} to {bundle.dest}")
+                result = router.find_path(bundle, bundle.creation_t)
+                if result:
+                    path, arrival = result
+                    print(f"  SUCCESS (Single): {' -> '.join(map(str, path))} @ {arrival:.2f}")
+                else:
+                    print("  Trying fragmented routing...")
+                    frags = router.find_path_fragmented(bundle, bundle.creation_t)
+                    if frags:
+                        for p, a, s in frags:
+                            print(f"    Frag: {s} bits via {' -> '.join(map(str, p))} @ {a:.2f}")
+                    else:
+                        print("  FAILURE: Could not route bundle.")
+        return
 
     print(f"--- CGR Multi-Hop Simulation ---")
     
