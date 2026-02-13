@@ -10,6 +10,12 @@ import math
 import argparse
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional, Tuple
+from enum import IntEnum
+
+class Priority(IntEnum):
+    BULK = 0
+    NORMAL = 1
+    EXPEDITED = 2
 
 @dataclass
 class Contact:
@@ -27,6 +33,7 @@ class Bundle:
     size: float # bits
     creation_t: float
     deadline_t: float
+    priority: Priority = Priority.NORMAL
     fragments: List['BundleFragment'] = None
 
 @dataclass
@@ -36,15 +43,74 @@ class BundleFragment:
     size: float
     arrival_t: float = -1.0
 
+@dataclass
+class CGRNodeState:
+    node_id: int
+    current_storage_bits: float = 0.0
+    energy_consumed_joules: float = 0.0
+
 class CGRRouter:
     def __init__(self, node_id: int):
         self.node_id = node_id
         self.contacts: List[Contact] = []
         self.storage_limit = float('inf')
         self.current_storage = 0
+        self.queue: List[Bundle] = []
+        
+        # Energy model: 0.1 mJ per bit stored per second (placeholder)
+        self.storage_power_w = 0.0001 
+        self.last_update_t = 0.0
+        self.energy_joules = 0.0
         
     def add_contact(self, contact: Contact):
         self.contacts.append(contact)
+
+    def update_energy(self, current_t: float):
+        """Update energy consumption based on time elapsed and storage."""
+        dt = max(0, current_t - self.last_update_t)
+        # Power proportional to bits stored (simple model)
+        self.energy_joules += self.current_storage * self.storage_power_w * dt
+        self.last_update_t = current_t
+
+    def enqueue_bundle(self, bundle: Bundle):
+        """Add bundle to priority queue."""
+        if self.current_storage + bundle.size > self.storage_limit:
+            print(f"  DROP: Bundle {bundle.id} exceeds storage limit.")
+            return
+        
+        self.update_energy(bundle.creation_t)
+        self.queue.append(bundle)
+        self.current_storage += bundle.size
+        # Sort by priority (high first), then deadline (earliest first)
+        self.queue.sort(key=lambda b: (-b.priority, b.deadline_t))
+
+    def process_queue(self, current_t: float):
+        """Attempt to route all queued bundles in priority order."""
+        self.update_energy(current_t)
+        print(f"\n--- Processing Queue at t={current_t:.2f} ---")
+        print(f"Storage: {self.current_storage} bits | Energy: {self.energy_joules:.4f} J")
+        delivered = []
+        for bundle in self.queue:
+            print(f"Routing Bundle {bundle.id} (Priority: {bundle.priority.name}): {bundle.size} bits from {bundle.source} to {bundle.dest}")
+            result = self.find_path(bundle, current_t)
+            if result:
+                path, arrival = result
+                print(f"  SUCCESS (Single): {' -> '.join(map(str, path))} @ {arrival:.2f}")
+                delivered.append(bundle)
+            else:
+                frags = self.find_path_fragmented(bundle, current_t)
+                if frags:
+                    print(f"  SUCCESS (Fragmented): {len(frags)} fragments")
+                    delivered.append(bundle)
+                else:
+                    print("  STAYING IN QUEUE: No path found.")
+        
+        for b in delivered:
+            self.queue.remove(b)
+            self.current_storage -= b.size
+        
+        self.update_energy(current_t)
+        print(f"Final Storage: {self.current_storage} bits | Final Energy: {self.energy_joules:.4f} J")
         
     def find_path_fragmented(self, bundle: Bundle, current_t: float) -> Optional[List[Tuple[List[int], float, float]]]:
         """
@@ -171,25 +237,17 @@ def main():
             for c_data in data.get('contacts', []):
                 router.add_contact(Contact(**c_data))
             
-            bundles = [Bundle(**b_data) for b_data in data.get('bundles', [])]
-            if not bundles:
+            for b_data in data.get('bundles', []):
+                # Handle priority conversion if string
+                if 'priority' in b_data and isinstance(b_data['priority'], str):
+                    b_data['priority'] = Priority[b_data['priority'].upper()]
+                router.enqueue_bundle(Bundle(**b_data))
+            
+            if not router.queue:
                 print("No bundles found in scenario.")
                 return
             
-            for bundle in bundles:
-                print(f"\nRouting Bundle {bundle.id}: {bundle.size} bits from {bundle.source} to {bundle.dest}")
-                result = router.find_path(bundle, bundle.creation_t)
-                if result:
-                    path, arrival = result
-                    print(f"  SUCCESS (Single): {' -> '.join(map(str, path))} @ {arrival:.2f}")
-                else:
-                    print("  Trying fragmented routing...")
-                    frags = router.find_path_fragmented(bundle, bundle.creation_t)
-                    if frags:
-                        for p, a, s in frags:
-                            print(f"    Frag: {s} bits via {' -> '.join(map(str, p))} @ {a:.2f}")
-                    else:
-                        print("  FAILURE: Could not route bundle.")
+            router.process_queue(0.0) # Start sim at t=0
         return
 
     print(f"--- CGR Multi-Hop Simulation ---")
@@ -208,34 +266,22 @@ def main():
         Contact(source=0, dest=2, start_t=50, end_t=60, datarate=500)
     ]
     
-    bundle = Bundle(id=1, source=0, dest=2, size=args.bundle_size, creation_t=0, deadline_t=100)
-    
     router = CGRRouter(node_id=0)
+    router.storage_limit = 2000 # bits
     for c in contacts:
         router.add_contact(c)
-        
-    print(f"Bundle: {bundle.size} bits, {bundle.source} -> {bundle.dest}")
-    
-    print("\n--- Standard CGR (Single Path) ---")
-    result = router.find_path(bundle, current_t=0)
-    if result:
-        path, arrival = result
-        print(f"SUCCESS: Found path: {' -> '.join(map(str, path))}")
-        print(f"Estimated Arrival Time: {arrival:.2f}")
-    else:
-        print("FAILURE: No valid single path found within deadline (bundle too large for any one window?).")
 
-    print("\n--- Fragmented CGR (Multi-Path/Window) ---")
-    large_bundle = Bundle(id=2, source=0, dest=2, size=15000, creation_t=0, deadline_t=100)
-    print(f"Large Bundle: {large_bundle.size} bits, {large_bundle.source} -> {large_bundle.dest}")
-    fragments = router.find_path_fragmented(large_bundle, current_t=0)
+    # Add three bundles: one Bulk, one Expedited, one that exceeds storage
+    b1 = Bundle(id=1, source=0, dest=2, size=1000, creation_t=0, deadline_t=100, priority=Priority.BULK)
+    b2 = Bundle(id=2, source=0, dest=2, size=500, creation_t=10, deadline_t=100, priority=Priority.EXPEDITED)
+    b3 = Bundle(id=3, source=0, dest=2, size=1000, creation_t=15, deadline_t=100, priority=Priority.NORMAL)
     
-    if fragments:
-        print(f"SUCCESS: Delivered in {len(fragments)} fragments.")
-        for i, (path, arrival, size) in enumerate(fragments):
-            print(f"  Frag {i+1}: {size} bits via {' -> '.join(map(str, path))} arriving @ {arrival:.2f}")
-    else:
-        print("FAILURE: Could not deliver large bundle even with fragmentation.")
+    print("\n--- Testing Storage & Energy & Priority ---")
+    router.enqueue_bundle(b1)
+    router.enqueue_bundle(b2)
+    router.enqueue_bundle(b3) # Should be dropped or stay if room?
+    
+    router.process_queue(current_t=20)
 
 if __name__ == "__main__":
     main()

@@ -26,6 +26,8 @@ This document outlines current and upcoming tasks for the 'Off-Grid Communicatio
 - [x] Add visualization for time-varying contacts (Gantt chart or similar). (See `sim/viz_cgr.py`.)
 - [x] Implement node-local storage (buffer) limits in CGR router.
 - [x] Add CLI support to `cgr_sim.py` for loading contact plans from JSON.
-- [ ] Implement bundle priority queuing in CGR router.
-- [ ] Add energy consumption modeling for CGR node storage.
+- [x] Implement bundle priority queuing in CGR router.
+- [x] Add energy consumption modeling for CGR node storage.
+- [ ] Implement bundle expiry (TTL) checks during queue processing.
+- [ ] Add visualization for energy consumption over time.
 
