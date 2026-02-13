@@ -107,7 +107,11 @@ class CGRRouter:
                         if c.source == u_node and c.dest == v_node:
                             # This is a bit rough, but let's shift start_t forward
                             # to simulate consumed time in the window
-                            c.start_t = max(c.start_t, best_fragment_arrival) 
+                            # Note: This is an approximation. A more precise implementation
+                            # would split the contact window or track bytes_sent.
+                            # Fixing logic: t + (actual_send / c.datarate) is the consumption time.
+                            xmit_time = actual_send / c.datarate
+                            c.start_t = max(c.start_t, t + xmit_time)
 
                 if actual_send == 0: break 
             else:
